@@ -7,7 +7,7 @@ use Livewire\WithPagination as LivewireWithPagination;
 
 /**
  * Table Pagination Methodology.
- * 
+ *
  * @property integer $paginateLength
  *
  * @package pharaonic/livewire-table
@@ -20,7 +20,7 @@ trait WithPagination
 
     /**
      * Pagination Length
-     * 
+     *
      * @return integer
      */
     public $paginateLength = 10;
@@ -34,6 +34,7 @@ trait WithPagination
     {
         $this->page = $this->resolvePage();
         $this->options->set('paginate.current', $this->page);
+        $this->options->set('paginate.length', $this->paginateLength);
 
         Paginator::currentPageResolver(function () {
             return (int) $this->page;
@@ -59,7 +60,7 @@ trait WithPagination
 
     /**
      * Update Paginate Length
-     * 
+     *
      * @param integer $length
      * @return void
      */
