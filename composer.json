@@ -1,0 +1,42 @@
+{
+    "name": "pharaonic/livewire-table",
+    "description": "Full-Function Table for Livewire Components.",
+    "keywords": [
+        "livewire table",
+        "livewire-table",
+        "livewire datatables",
+        "livewire-datatables",
+        "livewire",
+        "laravel"
+    ],
+    "homepage": "https://github.com/pharaonic/livewire-table",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Moamen Eltouny (Raggi)",
+            "email": "raggi@raggitech.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.2",
+        "livewire/livewire": ">=2.0",
+        "pharaonic/php-dot-array": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Pharaonic\\Livewire\\Table\\": "src"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Pharaonic\\Livewire\\Table\\TableServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
