@@ -118,7 +118,7 @@ final class Options
         $this->options = dot([
             // TABLE
             'table'     => [
-                'component'         => 'livewire-table::table',
+                'view'              => 'livewire-table::table',
                 'class'             => null,
                 'attributes'        => [],
             ],

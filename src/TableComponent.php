@@ -54,7 +54,7 @@ abstract class TableComponent extends LivewireComponent
      */
     public function render()
     {
-        return view($this->options->get('table.component'), [
+        return view($this->options->get('table.view'), [
             'records'   => $this->records,
             'options'   => $this->options,
             'columns'   => $this->columns,
