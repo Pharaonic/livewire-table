@@ -42,7 +42,7 @@
                 @livewire($options->get('row.component'),
                     [
                         'record'    => &$record,
-                        'columns'   => $columns->getRowData($record),
+                        'columns'   => $columns->getRowData(),
                         'options'   => [
                             'class'         => $options->getAttribute('row.class', 'class'),
                             'attributes'    => $options->getArrayAsString('row.attributes'),
