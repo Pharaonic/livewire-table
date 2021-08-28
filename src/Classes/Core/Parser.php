@@ -2,6 +2,7 @@
 
 namespace Pharaonic\Livewire\Table\Classes\Core;
 
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -67,18 +68,19 @@ abstract class Parser
                     // ADD ACTION
                     if (isset($record->{$column['name']})) throw new Exception('Attribute `' .  $column['name'] . '` has already found in the model.');
 
-                    $value = $this->getColumnValue($column['value'], null, $record);;
+                    $record->{$column['name']} = $this->getColumnValue($column['value'], null, $record);;
                 } else {
                     // EDIT ACTION
                     if (!isset($record->{$column['name']})) throw new Exception('Attribute `' .  $column['name'] . '` has not found in the model.');
 
-                    $value = $this->getColumnValue($column['value'], $record->{$column['name']}, $record);
+                    if ($record->{$column['name']} instanceof Carbon) {
+                        $value = $this->getColumnValue($column['value'], $record->{$column['name']}, $record);
+                        $record->timestamps = false;
+                        $record->{$column['name']} = $value;
+                    } else {
+                        $record->{$column['name']} = $this->getColumnValue($column['value'], $record->{$column['name']}, $record);
+                    }
                 }
-
-                if ($record->timestamps)
-                    $record->timestamps = false;
-
-                $record->{$column['name']} = $value;
             }
 
             return $record;
