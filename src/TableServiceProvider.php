@@ -14,7 +14,7 @@ class TableServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->mergeConfigFrom(__DIR__ . '/../config/options.php', 'livewire-table');
     }
 
     /**
@@ -32,7 +32,8 @@ class TableServiceProvider extends ServiceProvider
 
         // PUBLISHING
         $this->publishes([
-            __DIR__.'/../resources/views/components' => resource_path('views/vendor/livewire-table'),
+            __DIR__ . '/../resources/views/components'  => resource_path('views/vendor/livewire-table'),
+            __DIR__.'/../config/options.php'            => config_path('Pharaonic/Livewire/table.php'),
         ], ['pharaonic', 'livewire-table']);
     }
 }
