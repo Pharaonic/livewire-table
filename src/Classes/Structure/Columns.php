@@ -10,7 +10,7 @@ use Exception;
  * @method array getSearchables()
  * @method array getOrderables()
  * @method array getFilterables()
- * @method array getRowData(object $record)
+ * @method array getRowData()
  * @method void resetOrder()
  *
  * @package pharaonic/livewire-table
@@ -111,17 +111,16 @@ final class Columns
     /**
      * Collect the row needs of data
      *
-     * @param object $record
      * @return array
      */
-    public function getRowData(object $record)
+    public function getRowData()
     {
         $output = [];
 
-        foreach ($this->list as $column) $output[] = [
+        foreach ($this->list as $column) $output[$column->getData() ?? $column->name] = [
             'class'         => $column->getClass(),
             'attributes'    => $column->getAttributes(),
-            'data'          => $record->{$column->getData() ?? $column->name} ?? ($column->getView() ?? null)
+            'view'          => $column->view,
         ];
 
         return $output;

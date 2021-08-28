@@ -4,6 +4,7 @@ namespace Pharaonic\Livewire\Table;
 
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Component as LivewireComponent;
+use Pharaonic\Livewire\Table\Traits\WithCustomColumns;
 
 /**
  * Row Component of Pharaonic
@@ -23,6 +24,8 @@ use Livewire\Component as LivewireComponent;
  */
 class RowComponent extends LivewireComponent
 {
+    use WithCustomColumns;
+
     public $record;
     public $columns;
     public $options;
@@ -60,20 +63,5 @@ class RowComponent extends LivewireComponent
     protected function refreshTable()
     {
         $this->emitUp('refresh');
-    }
-
-    /**
-     * Refresh all the record data
-     *
-     * @param array $columns
-     * @return void
-     */
-    protected function refreshColumns(...$columns)
-    {
-        if (is_array($columns[0])) $columns = $columns[0];
-
-        foreach ($columns as $column)
-            if (isset($this->columns[$column]))
-                $this->columns[$column]['data'] = $this->record->{$column};
     }
 }

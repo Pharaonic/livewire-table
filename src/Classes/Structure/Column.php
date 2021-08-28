@@ -15,6 +15,8 @@ namespace Pharaonic\Livewire\Table\Classes\Structure;
  * @method string|null getAttributes()
  * @method string|null getHeadClass()
  * @method string|null getHeadAttributes()
+ * @method string|null getData()
+ * @method void setOrderDirection(string $direction)
  *
  * @package pharaonic/livewire-table
  * @version 1.0.0
@@ -22,8 +24,8 @@ namespace Pharaonic\Livewire\Table\Classes\Structure;
  */
 final class Column
 {
-    public $name, $title, $data, $orderable, $searchable, $filterable, $direction;
-    private $view, $class, $attributes, $head;
+    public $name, $title, $data, $orderable, $searchable, $filterable, $direction, $view;
+    private $class, $attributes, $head;
 
     /**
      * Create a new column instance.
@@ -65,18 +67,6 @@ final class Column
         }
 
         return $this->data;
-    }
-
-    /**
-     * Getting rendered view.
-     *
-     * @return \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory|null
-     */
-    public function getView()
-    {
-        if (!$this->view) return;
-
-        return view($this->view)->render();
     }
 
     /**
