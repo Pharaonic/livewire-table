@@ -7,6 +7,8 @@ use Livewire\WithPagination as LivewireWithPagination;
 
 /**
  * Table Pagination Methodology.
+ * 
+ * @property integer $paginateLength
  *
  * @package pharaonic/livewire-table
  * @version 1.0.0
@@ -15,6 +17,13 @@ use Livewire\WithPagination as LivewireWithPagination;
 trait WithPagination
 {
     use LivewireWithPagination;
+
+    /**
+     * Pagination Length
+     * 
+     * @return integer
+     */
+    public $paginateLength = 10;
 
     /**
      * Customize the Livewire initializeWithPagination
@@ -46,5 +55,19 @@ trait WithPagination
 
         $this->options->set('paginate.current', $this->page);
         $this->getFreshRecords();
+    }
+
+    /**
+     * Update Paginate Length
+     * 
+     * @param integer $length
+     * @return void
+     */
+    public function updatingPaginateLength(int $length)
+    {
+        $this->paginateLength = $length;
+        $this->options->set('paginate.length', $length);
+
+        $this->setPage(1);
     }
 }
