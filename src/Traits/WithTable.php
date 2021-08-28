@@ -115,8 +115,11 @@ trait WithTable
         $this->options->set('paginate.current', $this->page);
 
         // Set Pre-Ordering
-        if ($this->options->get('order.status') && $this->options->get('order.column') && $this->columns->{$this->options->get('order.column')})
-            $this->columns->{$this->options->get('order.column')}->setOrderDirection($this->options->get('order.direction', 'asc'));
+        if ($this->options->get('order.status') && $this->options->get('order.column') && $this->columns->{$this->options->get('order.column')}) {
+            $direction = $this->options->get('order.direction', 'asc');
+            $this->options->set('order.direction', $direction);
+            $this->columns->{$this->options->get('order.column')}->setOrderDirection($direction);
+        }
 
         // Load query builder with customized columns list.
         $this->builder = call_user_func_array([$this, 'query'], []);
