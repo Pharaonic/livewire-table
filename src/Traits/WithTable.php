@@ -107,11 +107,16 @@ trait WithTable
         if (!method_exists($this, 'query'))
             throw new Exception('The `query` function is required.');
 
+        // Load Columns
+        $this->columns = new Columns(method_exists($this, 'columns') ? call_user_func([$this, 'columns']) : []);
+
         // Load options list.
         $this->options = new Options(method_exists($this, 'options') ? call_user_func([$this, 'options']) : []);
         $this->options->set('paginate.current', $this->page);
-        // Load Columns
-        $this->columns = new Columns(method_exists($this, 'columns') ? call_user_func([$this, 'columns']) : []);
+
+        // Set Pre-Ordering
+        if ($this->options->get('order.status') && $this->options->get('order.column') && $this->columns->{$this->options->get('order.column')})
+            $this->columns->{$this->options->get('order.column')}->setOrderDirection($this->options->get('order.direction', 'asc'));
 
         // Load query builder with customized columns list.
         $this->builder = call_user_func_array([$this, 'query'], []);
