@@ -26,8 +26,12 @@ trait WithOrdering
     {
         $this->listeners += ['orderBy', 'orderByDesc', 'orderByToggle'];
 
-        if ($this->orderColumn)
+        if ($this->orderColumn) {
             $this->setOrder($this->orderColumn, $this->orderDirection);
+        } elseif (!$this->orderColumn && $this->options->get('order.status') && $this->options->get('order.column')) {
+            $this->orderColumn = $this->options->get('order.column');
+            $this->orderDirection = $this->options->get('order.direction', 'asc');
+        }
     }
 
     /**
