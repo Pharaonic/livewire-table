@@ -27,8 +27,11 @@ trait WithFiltering
      */
     public function initializeWithFiltering()
     {
-        if ($this->filter && !empty($this->filter))
+        if ($this->filter && !empty($this->filter)) {
             $this->options->set('filter.columns', $this->filter);
+        } elseif (!$this->filter && $this->options->get('filter.status') && !empty($this->options->get('filter.columns'))) {
+            $this->filter = $this->options->get('filter.columns');
+        }
     }
 
     /**
