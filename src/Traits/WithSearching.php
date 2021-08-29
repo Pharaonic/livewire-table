@@ -22,8 +22,11 @@ trait WithSearching
 
     public function initializeWithSearching()
     {
-        if ($this->search && $this->search != '')
+        if ($this->search && $this->search != '') {
             $this->options->set('search.value', $this->search);
+        } elseif (!$this->search && $this->options->get('search.status') && $this->options->get('search.value')) {
+            $this->search = $this->options->get('search.value');
+        }
     }
 
     /**
