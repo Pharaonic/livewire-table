@@ -43,6 +43,9 @@ class RowComponent extends LivewireComponent
         $this->record = $record;
         $this->columns = $columns;
         $this->options = $options;
+
+        if (method_exists($this, 'init'))
+            call_user_func_array([$this, 'init'], [$record, $columns, $options]);
     }
 
     /**
