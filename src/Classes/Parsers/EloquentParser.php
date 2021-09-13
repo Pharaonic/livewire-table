@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Support\Facades\DB;
 use Pharaonic\Livewire\Table\Classes\Core\Options;
 use Pharaonic\Livewire\Table\Classes\Core\Parser;
 use Pharaonic\Livewire\Table\Classes\Structure\Columns;
@@ -24,7 +25,6 @@ use Pharaonic\Livewire\Table\Classes\Structure\Columns;
 class EloquentParser extends Parser
 {
     protected $collection, $options, $columns, $customColumns;
-    private $query, $relationshipsInjected = false;
 
     /**
      * Create a new parser instance.
@@ -43,17 +43,32 @@ class EloquentParser extends Parser
     }
 
     /**
+     * Update Builder's Query
+     *
+     * @param callable $action
+     * @return void
+     */
+    private function queryUpdater(callable $action)
+    {
+        $query = clone $this->collection->getQuery();
+        $action($query);
+        $this->collection->setQuery($query);
+        unset($query);
+    }
+
+    /**
      * Parsing the collection with options and columns.
      *
      * @return void
      */
     public function run()
     {
-        $this->injectRelationshipsQuery();
+        $this->queryUpdater(function (&$query) {
+            $this->injectRelationshipsQuery($query);
+        });
 
         // SEARCH
         if ($this->options->get('search.status') && $search = $this->options->get('search.value')) {
-
             $this->collection->where(function ($query) use ($search) {
                 foreach ($this->columns->getSearchables() as $index => $column) {
                     if (strpos($column, '.') !== false) {
@@ -85,8 +100,8 @@ class EloquentParser extends Parser
                     if ($this->collection->getRelation($relationship)) {
                         $relationTable = $this->collection->getRelation($relationship)->getQuery()->getModel()->getTable();
 
-                        $this->queryUpdater(function () use ($relationTable, $column, $value) {
-                            $this->query->where($relationTable . '.' . $column, $value);
+                        $this->queryUpdater(function ($query) use ($relationTable, $column, $value) {
+                            $query->where($relationTable . '.' . $column, $value);
                         });
                     }
                 } else {
@@ -95,6 +110,7 @@ class EloquentParser extends Parser
                 }
             }
         }
+
 
         // ORDER
         if ($this->options->get('order.status') && $column = $this->options->get('order.column')) {
@@ -111,8 +127,9 @@ class EloquentParser extends Parser
                     if ($this->collection->getRelation($relationship)) {
                         $relationTable = $this->collection->getRelation($relationship)->getQuery()->getModel()->getTable();
 
-                        $this->queryUpdater(function () use ($relationTable, $column, $direction) {
-                            $this->query->orderBy($relationTable . '.' . $column, $direction);
+                        $this->queryUpdater(function ($query) use ($relationTable, $column, $direction) {
+                            $query->columns[] = $relationTable . '.' . $column . ' as ' . $relationTable . '-' . $column;
+                            $query->orderBy($relationTable . '-' . $column, $direction);
                         });
                     }
                 } else {
@@ -132,80 +149,61 @@ class EloquentParser extends Parser
         // ADDITIONS & EDITS
         $this->injectAdditionsAndEdits();
 
-
         return $this->collection;
-    }
-
-    /**
-     * Update Builder's Query
-     *
-     * @param callable $action
-     * @return void
-     */
-    private function queryUpdater(callable $action)
-    {
-        $this->query = $this->collection->getQuery();
-        $action();
-        $this->collection->setQuery($this->query);
-        $this->query = null;
     }
 
     /**
      * Inject Relationships To The Query
      *
+     * @param \Illuminate\Database\Query\Builder $collectionQuery
      * @return void
      */
-    private function injectRelationshipsQuery()
+    private function injectRelationshipsQuery(&$collectionQuery)
     {
-        if (!$this->relationshipsInjected) {
-            $this->queryUpdater(function () {
-                $this->query->select($this->query->from . '.*');
+        $collectionQuery->select($collectionQuery->from . '.*');
+        $collectionQuery->distinct();
 
-                $relations = array_keys($this->collection->getEagerLoads());
+        $relations = array_keys($this->collection->getEagerLoads());
 
-                foreach ($relations as $relation) {
-                    $obj = $this->collection->getRelation($relation);
+        foreach ($relations as $relation) {
+            $obj = $this->collection->getRelation($relation);
 
-                    if ($obj instanceof BelongsToMany) {
-                        $pivot      = $obj->getTable();
-                        $pivotPK    = $obj->getExistenceCompareKey();
-                        $pivotFK    = $obj->getQualifiedParentKeyName();
-                        $this->injectJoin($pivot, $pivotPK, $pivotFK);
+            if ($obj instanceof BelongsToMany) {
+                $pivot      = $obj->getTable();
+                $pivotPK    = $obj->getExistenceCompareKey();
+                $pivotFK    = $obj->getQualifiedParentKeyName();
+                $this->injectJoin($collectionQuery, $pivot, $pivotPK, $pivotFK);
 
-                        $related    = $obj->getRelated();
-                        $table      = $related->getTable();
-                        $tablePK    = $related->getForeignKey();
-                        $first      = $pivot . '.' . $tablePK;
-                        $second     = $related->getQualifiedKeyName();
-                        $this->injectJoin($table, $first, $second);
-                    } elseif ($obj instanceof HasOneThrough) {
-                        $pivot      = explode('.', $obj->getQualifiedParentKeyName())[0]; // extract pivot table from key
-                        $pivotPK    = $pivot . '.' . $obj->getLocalKeyName();
-                        $pivotFK    = $obj->getQualifiedLocalKeyName();
-                        $this->injectJoin($pivot, $pivotPK, $pivotFK);
+                $related    = $obj->getRelated();
+                $table      = $related->getTable();
+                $tablePK    = $related->getForeignKey();
+                $first      = $pivot . '.' . $tablePK;
+                $second     = $related->getQualifiedKeyName();
+                $this->injectJoin($collectionQuery, $table, $first, $second);
+            } elseif ($obj instanceof HasOneThrough) {
+                $pivot      = explode('.', $obj->getQualifiedParentKeyName())[0]; // extract pivot table from key
+                $pivotPK    = $pivot . '.' . $obj->getLocalKeyName();
+                $pivotFK    = $obj->getQualifiedLocalKeyName();
+                $this->injectJoin($collectionQuery, $pivot, $pivotPK, $pivotFK);
 
-                        $related    = $obj->getRelated();
-                        $table      = $related->getTable();
-                        $tablePK    = $related->getForeignKey();
-                        $first      = $pivot . '.' . $tablePK;
-                        $second     = $related->getQualifiedKeyName();
-                    } elseif ($obj instanceof HasOneOrMany) {
-                        $table      = $obj->getRelated()->getTable();
-                        $first      = $obj->getQualifiedForeignKeyName();
-                        $second     = $obj->getQualifiedParentKeyName();
-                    } elseif ($obj instanceof BelongsTo) {
-                        $table      = $obj->getRelated()->getTable();
-                        $first      = $obj->getQualifiedForeignKeyName();
-                        $second     = $obj->getQualifiedOwnerKeyName();
-                    } else {
-                        throw new Exception('Relation ' . get_class($obj) . ' is not yet supported.');
-                    }
+                $related    = $obj->getRelated();
+                $table      = $related->getTable();
+                $tablePK    = $related->getForeignKey();
+                $first      = $pivot . '.' . $tablePK;
+                $second     = $related->getQualifiedKeyName();
+            } elseif ($obj instanceof HasOneOrMany) {
+                $table      = $obj->getRelated()->getTable();
+                $first      = $obj->getQualifiedForeignKeyName();
+                $second     = $obj->getQualifiedParentKeyName();
+            } elseif ($obj instanceof BelongsTo) {
+                $table      = $obj->getRelated()->getTable();
+                $first      = $obj->getQualifiedForeignKeyName();
+                $second     = $obj->getQualifiedOwnerKeyName();
+            } else {
+                throw new Exception('Relation ' . get_class($obj) . ' is not yet supported.');
+            }
 
-                    $this->injectJoin($table, $first, $second);
-                }
-            });
-
-            $this->relationshipsInjected = true;
+            $this->injectJoin($collectionQuery, $table, $first, $second);
         }
     }
 
@@ -217,14 +215,14 @@ class EloquentParser extends Parser
      * @param string $second
      * @return void
      */
-    private function injectJoin($table, $first, $second)
+    private function injectJoin(&$query, $table, $first, $second)
     {
         $joins = [];
 
-        foreach ((array) $this->query->joins as $join)
+        foreach ((array) $query->joins as $join)
             $joins[] = $join->table;
 
         if (!in_array($table, $joins))
-            $this->query->join($table, $first, '=', $second, 'left');
+            $query->join($table, $first, '=', $second, 'left');
     }
 }
