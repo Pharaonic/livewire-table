@@ -93,26 +93,6 @@ class EloquentParser extends Parser
                     $query->where($column, '=', $value);
                 }
             });
-
-            // foreach ($columns as $column => $value) {
-            //     if (strpos($column, '.') !== false) {
-            //         // RELATIONSHIP
-            //         $column = explode('.', $column);
-            //         $relationship = $column[0];
-            //         $column = array_pop($column);
-
-            //         if ($this->collection->getRelation($relationship)) {
-            //             $relationTable = $this->collection->getRelation($relationship)->getQuery()->getModel()->getTable();
-
-            //             // $this->queryUpdater(function ($query) use ($relationTable, $column, $value) {
-            //             //     $query->where($relationTable . '.' . $column, $value);
-            //             // });
-            //         }
-            //     } else {
-            //         // DIRECT
-            //         $this->collection->where($column, '=', $value);
-            //     }
-            // }
         }
 
 
