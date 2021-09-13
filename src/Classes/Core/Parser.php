@@ -11,7 +11,7 @@ use ReflectionFunction;
 /**
  * Main Parser
  *
- * @method mixed getColumnValue($callable, $value = null, Object $record)
+ * @method mixed getColumnValue($callable, $value, Object $record)
  * @method mixed injectAdditionsAndEdits($inject = false)
  *
  * @package pharaonic/livewire-table
@@ -30,12 +30,12 @@ abstract class Parser
      * @param Object $record
      * @return mixed
      */
-    protected function getColumnValue($callable, $value = null, Object $record)
+    protected function getColumnValue($callable, $value, Object $record)
     {
         if (is_callable($callable)) {
             $callable = new ReflectionFunction($callable);
 
-            $params = array_map(function (&$param) use ($value, $record) {
+            $params = array_map(function ($param) use ($record, $value) {
 
                 $type = $param->getType();
                 if ($type) $type = $type->getName();
@@ -63,23 +63,15 @@ abstract class Parser
     protected function injectAdditionsAndEdits($inject = false)
     {
         $injectedCollection = $this->collection->map(function ($record) {
+            $attrs = array_keys($record->getAttributes());
+
             foreach ($this->customColumns as $column) {
-                if ($column['type'] == 'add') {
-                    // ADD ACTION
-                    if (isset($record->{$column['name']})) throw new Exception('Attribute `' .  $column['name'] . '` has already found in the model.');
-
-                    $record->{$column['name']} = $this->getColumnValue($column['value'], null, $record);;
+                if ($record->{$column['name']} instanceof Carbon) {
+                    $value = $this->getColumnValue($column['value'], $record->{$column['name']}, $record);
+                    $record->timestamps = false;
+                    $record->{$column['name']} = $value;
                 } else {
-                    // EDIT ACTION
-                    if (!isset($record->{$column['name']})) throw new Exception('Attribute `' .  $column['name'] . '` has not found in the model.');
-
-                    if ($record->{$column['name']} instanceof Carbon) {
-                        $value = $this->getColumnValue($column['value'], $record->{$column['name']}, $record);
-                        $record->timestamps = false;
-                        $record->{$column['name']} = $value;
-                    } else {
-                        $record->{$column['name']} = $this->getColumnValue($column['value'], $record->{$column['name']}, $record);
-                    }
+                    $record->{$column['name']} = $this->getColumnValue($column['value'], $record->{$column['name']}, $record);
                 }
             }
 
