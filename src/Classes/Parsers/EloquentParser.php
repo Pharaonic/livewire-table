@@ -24,7 +24,7 @@ use Pharaonic\Livewire\Table\Classes\Structure\Columns;
 class EloquentParser extends Parser
 {
     protected $collection, $options, $columns, $customColumns;
-    private $relationshipsInjected = false;
+    private $query, $relationshipsInjected = false;
 
     /**
      * Create a new parser instance.
@@ -49,39 +49,31 @@ class EloquentParser extends Parser
      */
     public function run()
     {
+        $this->injectRelationshipsQuery();
 
         // SEARCH
         if ($this->options->get('search.status') && $search = $this->options->get('search.value')) {
 
-            $hasRelations = array_filter($this->columns->getSearchables(), function ($column) {
-                return strpos($column, '.') !== false;
-            });
+            $this->collection->where(function ($query) use ($search) {
+                foreach ($this->columns->getSearchables() as $index => $column) {
+                    if (strpos($column, '.') !== false) {
+                        // RELATIONSHIP
+                        $column = explode('.', $column);
+                        $relationship = $column[0];
+                        $column = array_pop($column);
 
-            if (count($hasRelations) > 0) $this->injectRelationshipsQuery();
-
-            $this->queryUpdater(function () use ($search) {
-                $this->query->where(function ($query) use ($search) {
-                    foreach ($this->columns->getSearchables() as $index => $column) {
-                        if (strpos($column, '.') !== false) {
-                            $column = explode('.', $column);
-                            $relation = $column[0];
-                            $column = array_pop($column);
-
-                            $column = $this->collection->getRelation($relation)->getQuery()->getModel()->getTable() . '.' . $column;
-                        } else {
-                            $column = $this->collection->getQuery()->from . '.' . $column;
+                        if ($this->collection->getRelation($relationship)) {
+                            $relationTable = $this->collection->getRelation($relationship)->getQuery()->getModel()->getTable();
+                            $column = $relationTable . '.' . $column;
                         }
-
-                        if ($index == 0)
-                            $query->where($column, 'LIKE', '%' . $search . '%');
-                        else
-                            $query->orWhere($column, 'LIKE', '%' . $search . '%');
                     }
-                });
+
+                    $query->{$index == 0 ? 'where' : 'orWhere'}($column, 'LIKE', '%' . $search . '%');
+                }
             });
         }
 
-        // // FILTER
+        // FILTER
         if ($this->options->get('filter.status') && !empty($columns = $this->columns->getFilterables($this->options->get('filter.columns', [])))) {
             foreach ($columns as $column => $value) {
                 if (strpos($column, '.') !== false) {
@@ -91,9 +83,10 @@ class EloquentParser extends Parser
                     $column = array_pop($column);
 
                     if ($this->collection->getRelation($relationship)) {
-                        $this->injectRelationshipsQuery();
-                        $this->queryUpdater(function () use ($column, $value) {
-                            $this->query->where($column, '=', $value);
+                        $relationTable = $this->collection->getRelation($relationship)->getQuery()->getModel()->getTable();
+
+                        $this->queryUpdater(function () use ($relationTable, $column, $value) {
+                            $this->query->where($relationTable . '.' . $column, $value);
                         });
                     }
                 } else {
@@ -116,9 +109,10 @@ class EloquentParser extends Parser
                     $column = array_pop($column);
 
                     if ($this->collection->getRelation($relationship)) {
-                        $this->injectRelationshipsQuery();
-                        $this->queryUpdater(function () use ($column, $direction) {
-                            $this->query->orderBy($column, $direction);
+                        $relationTable = $this->collection->getRelation($relationship)->getQuery()->getModel()->getTable();
+
+                        $this->queryUpdater(function () use ($relationTable, $column, $direction) {
+                            $this->query->orderBy($relationTable . '.' . $column, $direction);
                         });
                     }
                 } else {
@@ -153,8 +147,9 @@ class EloquentParser extends Parser
         $this->query = $this->collection->getQuery();
         $action();
         $this->collection->setQuery($this->query);
-        unset($this->query);
+        $this->query = null;
     }
+
     /**
      * Inject Relationships To The Query
      *
