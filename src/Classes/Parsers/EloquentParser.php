@@ -147,13 +147,44 @@ class EloquentParser extends Parser
      */
     private function injectRelationshipsQuery(&$collectionQuery)
     {
-        $collectionQuery->select($collectionQuery->from . '.*');
+        if (!$collectionQuery->columns || !in_array($collectionQuery->from . '.*', $collectionQuery->columns))
+            $collectionQuery->select($collectionQuery->from . '.*');
+
         $collectionQuery->distinct();
 
         $relations = array_keys($this->collection->getEagerLoads());
+        $this->relationshipsInjector($relations, $this->collection, $collectionQuery);
+    }
 
-        foreach ($relations as $relation) {
-            $obj = $this->collection->getRelation($relation);
+    /**
+     * Direct Inject Relationships
+     *
+     * @param array $relations
+     * @param mixed $collection
+     * @param mixed $collectionQuery
+     * @return void
+     */
+    public function relationshipsInjector(array $relations, $collection, &$collectionQuery)
+    {
+        while (!empty($relations)) {
+            $relation = array_shift($relations);
+            $obj = $collection->getRelation($relation);
+
+            if (!empty($subRelations = array_keys($obj->getEagerLoads()))) {
+
+                $objQuery = $obj->getQuery()->getQuery();
+
+                $this->relationshipsInjector($subRelations, $obj, $objQuery);
+                $obj->setQuery($objQuery);
+
+                $subRelationsFullNames = array_map(function ($n) use ($relation) {
+                    return $relation . '.' . $n;
+                }, $subRelations);
+
+                $relations = array_filter($relations, function ($current) use ($subRelationsFullNames) {
+                    return !in_array($current, $subRelationsFullNames);
+                });
+            }
 
             if ($obj instanceof BelongsToMany) {
                 $pivot      = $obj->getTable();
