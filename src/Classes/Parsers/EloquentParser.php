@@ -103,18 +103,18 @@ class EloquentParser extends Parser
                 $column = $this->columns->{$column}->data;
 
                 if (strpos($column, '.') !== false) {
-                    // RELATIONSHIP
-                    $column = explode('.', $column);
-                    $relationship = $column[0];
-                    $column = array_pop($column);
+                    // // RELATIONSHIP
+                    // $column = explode('.', $column);
+                    // $relationship = $column[0];
+                    // $column = array_pop($column);
 
-                    if ($this->collection->getRelation($relationship)) {
+                    // if ($this->collection->getRelation($relationship)) {
 
                         // TASK : SORT BY REALTIONSHIP
                         // $relationTable = $this->collection->getRelation($relationship)->getQuery()->getModel()->getTable();
                         // $query->columns[] = DB::raw("{$relationTable}.{$column} as Raggi");
                         // $query->orderBy("Raggi", $direction);
-                    }
+                    // }
                 } else {
                     // DIRECT
                     $query->orderBy($column, $direction);
@@ -129,6 +129,7 @@ class EloquentParser extends Parser
         // PAGINATE
         if ($this->options->get('paginate.status')) {
             $this->collection = $this->collection->paginate($this->options->get('paginate.length'));
+            // dd($this->collection->pluck('id')->toArray());
         } else {
             $this->collection = $this->collection->get();
         }
