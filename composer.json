@@ -19,7 +19,7 @@
     ],
     "require": {
         "php": ">=7.2",
-        "livewire/livewire": ">=2.0",
+        "livewire/livewire": ">=2.6",
         "pharaonic/php-dot-array": "^1.0"
     },
     "autoload": {
