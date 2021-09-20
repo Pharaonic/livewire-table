@@ -32,30 +32,59 @@ trait WithPagination
      */
     public function initializeWithPagination()
     {
+        foreach ($this->paginators as $key => $value) {
+            $this->$key = $value;
+        }
+
         $this->page = $this->resolvePage();
+
+        $this->paginators['page'] = $this->page;
+
+        Paginator::currentPageResolver(function ($pageName) {
+            if (! isset($this->paginators[$pageName])) {
+                $this->paginators[$pageName] = request()->query($pageName, 1);
+            }
+
+            return (int) $this->paginators[$pageName];
+        });
+
         $this->options->set('paginate.current', $this->page);
         $this->options->set('paginate.length', $this->paginateLength);
-
-        Paginator::currentPageResolver(function () {
-            return (int) $this->page;
-        });
 
         Paginator::defaultView($this->paginationView());
         Paginator::defaultSimpleView($this->paginationSimpleView());
     }
 
-    /**
-     * Customize the Livewire setPage
-     *
-     * @param integer $page
-     * @return void
-     */
-    public function setPage($page)
+    public function setPage($page, $pageName = 'page')
     {
-        $this->page = $page;
+        $beforePaginatorMethod = 'updatingPaginators';
+        $afterPaginatorMethod = 'updatedPaginators';
 
+        $beforeMethod = 'updating' . $pageName;
+        $afterMethod = 'updated' . $pageName;
+
+        if (method_exists($this, $beforePaginatorMethod)) {
+            $this->{$beforePaginatorMethod}($page, $pageName);
+        }
+
+        if (method_exists($this, $beforeMethod)) {
+            $this->{$beforeMethod}($page, null);
+        }
+
+        $this->paginators[$pageName] =  $page;
+
+        $this->{$pageName} = $page;
+        
         $this->options->set('paginate.current', $this->page);
         $this->getFreshRecords();
+
+        if (method_exists($this, $afterPaginatorMethod)) {
+            $this->{$afterPaginatorMethod}($page, $pageName);
+        }
+
+        if (method_exists($this, $afterMethod)) {
+            $this->{$afterMethod}($page, null);
+        }
     }
 
     /**
